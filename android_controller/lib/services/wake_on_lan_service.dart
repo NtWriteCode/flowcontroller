@@ -21,29 +21,41 @@ class WakeOnLanService {
         return false;
       }
 
-      // Calculate broadcast IP from server IP
-      final broadcastIp = _calculateBroadcastIp(config.host);
-      final ipValidation = IPAddress.validate(broadcastIp);
-      if (!ipValidation.state) {
-        print('Wake-on-LAN: Invalid broadcast IP: $broadcastIp');
-        return false;
+      // Try all methods for maximum compatibility
+      final mac = MACAddress(config.macAddress);
+      
+      // Method 1: Directed packet to server IP (works better with WiFi)
+      try {
+        final serverIp = IPAddress(config.host);
+        final wolDirect = WakeOnLAN(serverIp, mac);
+        print('Wake-on-LAN: Sending directed packet to ${config.macAddress} via ${config.host}');
+        await wolDirect.wake(repeat: 2, repeatDelay: const Duration(milliseconds: 300));
+      } catch (e) {
+        print('Wake-on-LAN: Directed packet failed: $e');
+      }
+      
+      // Method 2: Subnet broadcast (traditional method)
+      try {
+        final broadcastIp = _calculateBroadcastIp(config.host);
+        final ip = IPAddress(broadcastIp);
+        final wolBroadcast = WakeOnLAN(ip, mac);
+        print('Wake-on-LAN: Sending broadcast packet to ${config.macAddress} via $broadcastIp');
+        await wolBroadcast.wake(repeat: 2, repeatDelay: const Duration(milliseconds: 300));
+      } catch (e) {
+        print('Wake-on-LAN: Broadcast packet failed: $e');
+      }
+      
+      // Method 3: Global broadcast (last resort)
+      try {
+        final globalBroadcast = IPAddress('255.255.255.255');
+        final wolGlobal = WakeOnLAN(globalBroadcast, mac);
+        print('Wake-on-LAN: Sending global broadcast packet to ${config.macAddress}');
+        await wolGlobal.wake(repeat: 1, repeatDelay: const Duration(milliseconds: 200));
+      } catch (e) {
+        print('Wake-on-LAN: Global broadcast failed: $e');
       }
 
-      // Create MAC and IP address objects
-      final mac = MACAddress(config.macAddress);
-      final ip = IPAddress(broadcastIp);
-
-      // Create WakeOnLAN instance and send magic packet
-      final wol = WakeOnLAN(ip, mac);
-      
-      print('Wake-on-LAN: Sending magic packet to ${config.macAddress} via $broadcastIp');
-      
-      await wol.wake(
-        repeat: 3, // Send 3 packets for reliability
-        repeatDelay: const Duration(milliseconds: 500),
-      );
-
-      print('Wake-on-LAN: Magic packet sent successfully');
+      print('Wake-on-LAN: All methods attempted. Check if PC wakes up.');
       return true;
     } catch (e) {
       print('Wake-on-LAN: Failed to send magic packet: $e');
