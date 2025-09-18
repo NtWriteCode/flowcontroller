@@ -1,0 +1,100 @@
+import 'package:flutter/material.dart';
+import 'models/server_config.dart';
+import 'services/config_service.dart';
+import 'screens/config_screen.dart';
+import 'screens/control_screen.dart';
+
+void main() {
+  runApp(const FlowControllerApp());
+}
+
+class FlowControllerApp extends StatelessWidget {
+  const FlowControllerApp({Key? key}) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      title: 'Flow Controller',
+      theme: ThemeData(
+        colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),
+        useMaterial3: true,
+      ),
+      home: const MainScreen(),
+      debugShowCheckedModeBanner: false,
+    );
+  }
+}
+
+class MainScreen extends StatefulWidget {
+  const MainScreen({Key? key}) : super(key: key);
+
+  @override
+  State<MainScreen> createState() => _MainScreenState();
+}
+
+class _MainScreenState extends State<MainScreen> {
+  ServerConfig? _config;
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadConfig();
+  }
+
+  Future<void> _loadConfig() async {
+    setState(() => _isLoading = true);
+    
+    try {
+      final config = await ConfigService.loadConfig();
+      setState(() {
+        _config = config;
+        _isLoading = false;
+      });
+    } catch (e) {
+      setState(() => _isLoading = false);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to load configuration: ${e.toString()}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  void _onConfigChanged() {
+    _loadConfig();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_isLoading) {
+      return const Scaffold(
+        body: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              CircularProgressIndicator(),
+              SizedBox(height: 16),
+              Text('Loading configuration...'),
+            ],
+          ),
+        ),
+      );
+    }
+
+    if (_config == null || !_config!.isValid) {
+      return ConfigScreen(
+        initialConfig: _config,
+        onConfigSaved: _onConfigChanged,
+      );
+    }
+
+    return ControlScreen(
+      config: _config!,
+      onConfigChanged: _onConfigChanged,
+    );
+  }
+}
