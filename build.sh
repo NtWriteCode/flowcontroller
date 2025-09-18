@@ -98,13 +98,16 @@ build_android_apk() {
     
     cd android_controller
     
+    # Kill any existing Flutter processes to prevent file watcher conflicts
+    pkill -f "flutter" 2>/dev/null || true
+    
     # Clean previous builds
     flutter clean
     flutter pub get
     
     # Build release APK (ARM64-v8a only)
     print_status "Building ARM64-v8a APK (this may take a few minutes)..."
-    flutter build apk --release --target-platform android-arm64
+    flutter build apk --release --target-platform android-arm64 --no-pub --no-tree-shake-icons
     
     # Copy APK file to build directory
     if [ -d "build/app/outputs/flutter-apk" ]; then
