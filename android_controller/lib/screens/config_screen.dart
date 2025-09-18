@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../models/server_config.dart';
 import '../services/config_service.dart';
 import '../services/api_service.dart';
+import '../services/theme_service.dart';
 import 'qr_scanner_screen.dart';
 
 class ConfigScreen extends StatefulWidget {
@@ -211,6 +213,19 @@ class _ConfigScreenState extends State<ConfigScreen> {
       appBar: AppBar(
         title: const Text('Server Configuration'),
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
+        actions: [
+          Consumer<ThemeService>(
+            builder: (context, themeService, child) {
+              return IconButton(
+                icon: Icon(
+                  themeService.isDarkMode ? Icons.light_mode : Icons.dark_mode,
+                ),
+                tooltip: themeService.isDarkMode ? 'Switch to Light Mode' : 'Switch to Dark Mode',
+                onPressed: () => themeService.toggleTheme(),
+              );
+            },
+          ),
+        ],
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -331,18 +346,23 @@ class _ConfigScreenState extends State<ConfigScreen> {
                 decoration: InputDecoration(
                   labelText: 'MAC Address (Auto-discovered)',
                   border: const OutlineInputBorder(),
-                  prefixIcon: const Icon(Icons.network_check),
+                  prefixIcon: Icon(
+                    Icons.network_check,
+                    color: _macController.text.isNotEmpty 
+                      ? Theme.of(context).colorScheme.primary
+                      : null,
+                  ),
                   helperText: 'Automatically discovered when connection test succeeds',
                   filled: _macController.text.isNotEmpty,
                   fillColor: _macController.text.isNotEmpty 
-                    ? Colors.green.shade50 
+                    ? Theme.of(context).colorScheme.primaryContainer
                     : null,
                 ),
                 readOnly: true,
                 style: TextStyle(
                   color: _macController.text.isNotEmpty 
-                    ? Colors.green.shade800 
-                    : Colors.grey[600],
+                    ? Theme.of(context).colorScheme.onPrimaryContainer
+                    : Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
                   fontWeight: _macController.text.isNotEmpty 
                     ? FontWeight.w600 
                     : FontWeight.normal,
@@ -369,21 +389,21 @@ class _ConfigScreenState extends State<ConfigScreen> {
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
                     color: _connectionStatus!.contains('successful')
-                      ? Colors.green.shade100
-                      : Colors.red.shade100,
+                      ? Theme.of(context).colorScheme.primaryContainer
+                      : Theme.of(context).colorScheme.errorContainer,
                     borderRadius: BorderRadius.circular(8),
                     border: Border.all(
                       color: _connectionStatus!.contains('successful')
-                        ? Colors.green
-                        : Colors.red,
+                        ? Theme.of(context).colorScheme.primary
+                        : Theme.of(context).colorScheme.error,
                     ),
                   ),
                   child: Text(
                     _connectionStatus!,
                     style: TextStyle(
                       color: _connectionStatus!.contains('successful')
-                        ? Colors.green.shade800
-                        : Colors.red.shade800,
+                        ? Theme.of(context).colorScheme.onPrimaryContainer
+                        : Theme.of(context).colorScheme.onErrorContainer,
                       fontWeight: FontWeight.w500,
                     ),
                   ),
@@ -395,15 +415,19 @@ class _ConfigScreenState extends State<ConfigScreen> {
               ElevatedButton.icon(
                 onPressed: _isLoading ? null : _saveConfig,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Theme.of(context).primaryColor,
-                  foregroundColor: Colors.white,
+                  backgroundColor: Theme.of(context).colorScheme.primary,
+                  foregroundColor: Theme.of(context).colorScheme.onPrimary,
                   padding: const EdgeInsets.symmetric(vertical: 16),
+                  elevation: 2,
                 ),
                 icon: _isLoading 
-                  ? const SizedBox(
+                  ? SizedBox(
                       width: 16,
                       height: 16,
-                      child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2, 
+                        color: Theme.of(context).colorScheme.onPrimary,
+                      ),
                     )
                   : const Icon(Icons.save),
                 label: Text(_isLoading ? 'Saving...' : 'Save Configuration'),

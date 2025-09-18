@@ -1,11 +1,18 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'models/server_config.dart';
 import 'services/config_service.dart';
+import 'services/theme_service.dart';
 import 'screens/config_screen.dart';
 import 'screens/control_screen.dart';
 
 void main() {
-  runApp(const FlowControllerApp());
+  runApp(
+    ChangeNotifierProvider(
+      create: (context) => ThemeService()..loadTheme(),
+      child: const FlowControllerApp(),
+    ),
+  );
 }
 
 class FlowControllerApp extends StatelessWidget {
@@ -13,14 +20,29 @@ class FlowControllerApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Flow Controller',
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),
-        useMaterial3: true,
-      ),
-      home: const MainScreen(),
-      debugShowCheckedModeBanner: false,
+    return Consumer<ThemeService>(
+      builder: (context, themeService, child) {
+        return MaterialApp(
+          title: 'Flow Controller',
+          theme: ThemeData(
+            colorScheme: ColorScheme.fromSeed(
+              seedColor: Colors.blue,
+              brightness: Brightness.light,
+            ),
+            useMaterial3: true,
+          ),
+          darkTheme: ThemeData(
+            colorScheme: ColorScheme.fromSeed(
+              seedColor: Colors.blue,
+              brightness: Brightness.dark,
+            ),
+            useMaterial3: true,
+          ),
+          themeMode: themeService.themeMode,
+          home: const MainScreen(),
+          debugShowCheckedModeBanner: false,
+        );
+      },
     );
   }
 }

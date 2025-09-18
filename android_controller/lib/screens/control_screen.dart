@@ -362,8 +362,10 @@ class _ControlScreenState extends State<ControlScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    
     return Scaffold(
-      backgroundColor: Colors.grey.shade900,
+      backgroundColor: theme.scaffoldBackgroundColor,
       body: SafeArea(
         child: Stack(
           children: [
@@ -403,13 +405,13 @@ class _ControlScreenState extends State<ControlScreen> {
                       Icon(
                         Icons.touch_app,
                         size: 80,
-                        color: Colors.white.withOpacity(0.3),
+                        color: theme.colorScheme.onSurface.withOpacity(0.3),
                       ),
                       const SizedBox(height: 16),
                       Text(
                         'Gesture Control Area',
                         style: TextStyle(
-                          color: Colors.white.withOpacity(0.5),
+                          color: theme.colorScheme.onSurface.withOpacity(0.5),
                           fontSize: 18,
                           fontWeight: FontWeight.w300,
                         ),
@@ -419,7 +421,7 @@ class _ControlScreenState extends State<ControlScreen> {
                         'Quick swipe: Single arrow key\nSwipe + hold: Continuous arrows\nTap: Enter\nDouble tap: Escape',
                         textAlign: TextAlign.center,
                         style: TextStyle(
-                          color: Colors.white.withOpacity(0.3),
+                          color: theme.colorScheme.onSurface.withOpacity(0.3),
                           fontSize: 14,
                         ),
                       ),
@@ -435,7 +437,7 @@ class _ControlScreenState extends State<ControlScreen> {
               Container(
                 width: double.infinity,
                 height: double.infinity,
-                color: Colors.blue.withOpacity(0.1),
+                color: theme.colorScheme.primary.withOpacity(0.1),
                 child: Center(
                   child: Container(
                     padding: const EdgeInsets.symmetric(
@@ -443,13 +445,16 @@ class _ControlScreenState extends State<ControlScreen> {
                       vertical: 12,
                     ),
                     decoration: BoxDecoration(
-                      color: Colors.black.withOpacity(0.8),
+                      color: theme.colorScheme.surface.withOpacity(0.9),
                       borderRadius: BorderRadius.circular(8),
+                      border: Border.all(
+                        color: theme.colorScheme.outline.withOpacity(0.3),
+                      ),
                     ),
                     child: Text(
                       _lastGesture,
-                      style: const TextStyle(
-                        color: Colors.white,
+                      style: TextStyle(
+                        color: theme.colorScheme.onSurface,
                         fontSize: 16,
                         fontWeight: FontWeight.w500,
                       ),
@@ -464,9 +469,9 @@ class _ControlScreenState extends State<ControlScreen> {
               right: 16,
               child: IconButton(
                 onPressed: _openSettings,
-                icon: const Icon(Icons.settings, color: Colors.white),
+                icon: Icon(Icons.settings, color: theme.colorScheme.onSurface),
                 style: IconButton.styleFrom(
-                  backgroundColor: Colors.black.withOpacity(0.5),
+                  backgroundColor: theme.colorScheme.surface.withOpacity(0.8),
                 ),
               ),
             ),
@@ -487,7 +492,8 @@ class _ControlScreenState extends State<ControlScreen> {
                       _sendVolumeCommand('down');
                     },
                     backgroundColor: Colors.red.withOpacity(0.8),
-                    child: const Icon(Icons.volume_down, color: Colors.white),
+                    foregroundColor: Colors.white,
+                    child: const Icon(Icons.volume_down),
                   ),
                   
                   // Keyboard
@@ -497,13 +503,12 @@ class _ControlScreenState extends State<ControlScreen> {
                     backgroundColor: _isKeyboardMode 
                         ? Colors.green.withOpacity(0.8) 
                         : Colors.blue.withOpacity(0.8),
+                    foregroundColor: Colors.white,
                     icon: Icon(
-                      _isKeyboardMode ? Icons.keyboard_hide : Icons.keyboard, 
-                      color: Colors.white,
+                      _isKeyboardMode ? Icons.keyboard_hide : Icons.keyboard,
                     ),
                     label: Text(
                       _isKeyboardMode ? 'Hide' : 'Keyboard',
-                      style: const TextStyle(color: Colors.white),
                     ),
                   ),
                   
@@ -515,7 +520,8 @@ class _ControlScreenState extends State<ControlScreen> {
                       _sendVolumeCommand('up');
                     },
                     backgroundColor: Colors.green.withOpacity(0.8),
-                    child: const Icon(Icons.volume_up, color: Colors.white),
+                    foregroundColor: Colors.white,
+                    child: const Icon(Icons.volume_up),
                   ),
                 ],
               ),
@@ -528,8 +534,11 @@ class _ControlScreenState extends State<ControlScreen> {
               child: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                 decoration: BoxDecoration(
-                  color: Colors.black.withValues(alpha: 0.5),
+                  color: theme.colorScheme.surface.withOpacity(0.8),
                   borderRadius: BorderRadius.circular(16),
+                  border: Border.all(
+                    color: theme.colorScheme.outline.withOpacity(0.3),
+                  ),
                 ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
@@ -545,8 +554,8 @@ class _ControlScreenState extends State<ControlScreen> {
                     const SizedBox(width: 8),
                     Text(
                       '${widget.config.host}:${widget.config.port}',
-                      style: const TextStyle(
-                        color: Colors.white,
+                      style: TextStyle(
+                        color: theme.colorScheme.onSurface,
                         fontSize: 12,
                         fontWeight: FontWeight.w500,
                       ),
