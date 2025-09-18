@@ -191,6 +191,11 @@ def get_system_mac_address():
                 result = subprocess.run(['getmac', '/fo', 'table', '/nh'], 
                                       capture_output=True, text=True, check=True)
                 lines = result.stdout.strip().split('\n')
+                
+                # Collect all valid MACs and prioritize connected ones
+                connected_macs = []
+                disconnected_macs = []
+                
                 for line in lines:
                     line = line.strip()
                     if line and not line.startswith('N/A'):
@@ -200,7 +205,22 @@ def get_system_mac_address():
                             mac_candidate = parts[0].strip()
                             if re.match(r'^([0-9A-Fa-f]{2}-){5}[0-9A-Fa-f]{2}$', mac_candidate):
                                 if not mac_candidate.startswith('00-00-00-00-00-00'):
-                                    return mac_candidate.replace('-', ':').upper()
+                                    mac_formatted = mac_candidate.replace('-', ':').upper()
+                                    # Check if this interface is connected
+                                    # Connected interfaces have device names, disconnected show "Media disconnected"
+                                    if 'Media disconnected' in line:
+                                        disconnected_macs.append(mac_formatted)
+                                    elif '\\Device\\' in line or 'Tcpip' in line:
+                                        connected_macs.append(mac_formatted)
+                                    else:
+                                        # If we can't determine, assume it might be connected
+                                        connected_macs.append(mac_formatted)
+                
+                # Return first connected MAC, or first disconnected as fallback
+                if connected_macs:
+                    return connected_macs[0]
+                elif disconnected_macs:
+                    return disconnected_macs[0]
             except subprocess.CalledProcessError:
                 # Method 2: Simple getmac without format
                 try:
