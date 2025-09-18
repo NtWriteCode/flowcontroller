@@ -73,7 +73,7 @@ if [ ! -f "config.json" ]; then
     echo "Please create server/config.json with your API token."
     echo "Example:"
     echo '{'
-    echo '  "api_token": "your-secret-token-here",'
+    echo '  "api_token": "secret-token",'
     echo '  "port": 8080,'
     echo '  "host": "0.0.0.0"'
     echo '}'
@@ -81,7 +81,7 @@ if [ ! -f "config.json" ]; then
 fi
 
 # Check if API token has been changed from default
-if grep -q "change-this-secret-token\|your-secret-token-here" config.json 2>/dev/null; then
+if grep -q "change-this-secret-token\|secret-token" config.json 2>/dev/null; then
     print_warning "Default API token detected!"
     echo "Please edit server/config.json and set a secure API token."
     echo

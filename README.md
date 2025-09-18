@@ -139,7 +139,7 @@ PC server configuration is stored in `server/config.json`:
 {
   "host": "0.0.0.0",
   "port": 8080,
-  "api_token": "your-secret-token-here"
+  "api_token": "secret-token"
 }
 ```
 

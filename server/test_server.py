@@ -7,7 +7,7 @@ import requests
 import json
 import time
 
-def test_server(host="localhost", port=8080, token="your-secret-token-here"):
+def test_server(host="localhost", port=8080, token="secret-token"):
     """Test all server endpoints"""
     
     base_url = f"http://{host}:{port}"
@@ -104,7 +104,7 @@ if __name__ == "__main__":
     else:
         token = input("Enter your API token (or press Enter for default): ").strip()
         if not token:
-            token = "your-secret-token-here"
+            token = "secret-token"
     
     print("WARNING: This will send actual keystrokes to your system!")
     print("Make sure you have a text editor open to see the results.")

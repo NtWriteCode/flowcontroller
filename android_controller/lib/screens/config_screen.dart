@@ -322,7 +322,7 @@ class _ConfigScreenState extends State<ConfigScreen> {
                 controller: _tokenController,
                 decoration: const InputDecoration(
                   labelText: 'API Token',
-                  hintText: 'your-secret-token-here',
+                  hintText: 'secret-token',
                   border: OutlineInputBorder(),
                   prefixIcon: Icon(Icons.security),
                 ),

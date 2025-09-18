@@ -66,7 +66,7 @@ if not exist "config.json" (
     echo Please create config.json with your API token.
     echo Example:
     echo {
-    echo   "api_token": "your-secret-token-here",
+    echo   "api_token": "secret-token",
     echo   "port": 8080,
     echo   "host": "0.0.0.0"
     echo }
@@ -88,7 +88,7 @@ if %ERRORLEVEL% EQU 0 (
     )
 )
 
-findstr "your-secret-token-here" config.json >nul 2>&1
+findstr "secret-token" config.json >nul 2>&1
 if %ERRORLEVEL% EQU 0 (
     echo [WARNING] Default API token detected!
     echo Please edit config.json and set a secure API token.
