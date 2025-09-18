@@ -1,6 +1,10 @@
-# Flow Controller
-
-**Control your Windows/Linux PC remotely from your Android phone using intuitive gestures, keyboard input, and voice commands.**
+<div align="center">
+  <img src="images/icon.png" alt="Flow Controller Logo" width="120" height="120">
+  
+  # Flow Controller
+  
+  **Control your Windows/Linux PC remotely from your Android phone using intuitive gestures, keyboard input, and voice commands.**
+</div>
 
 ## What is Flow Controller?
 
@@ -31,6 +35,23 @@ The server runs quietly in the background on your PC, waiting for commands from 
 - **📡 Live Monitoring** - Real-time connection status with ping measurement
 - **🚀 High Performance** - Instant response, 10+ gestures per second
 - **🔐 Secure** - Token-based authentication with automatic MAC discovery
+
+## 📱 Screenshots
+
+<div align="center">
+
+### Android App
+<img src="images/settings.jpg" alt="Settings Screen" width="300">
+<img src="images/gesture.jpg" alt="Gesture Control" width="300">
+
+*Left: Configuration screen with QR code scanning • Right: Main gesture control interface*
+
+### Server Component
+<img src="images/server.png" alt="Server Terminal" width="600">
+
+*Server running with QR code for easy pairing*
+
+</div>
 
 ## 🚀 Quick Start
 
@@ -140,10 +161,6 @@ This creates a `distributable` folder with:
 - `flow-controller-release.apk` - Android app
 - `flow-controller-windows.zip` - Windows PC server package
 - `flow-controller-linux.zip` - Linux PC server package
-
-## 📱 Screenshots
-
-*Professional gesture control interface with real-time connection status, volume controls, and system keyboard integration.*
 
 ---
 
