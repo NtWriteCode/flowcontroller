@@ -1,0 +1,6 @@
+flask==3.1.2
+pynput==1.8.1
+pycaw==20240210
+requests==2.32.5
+waitress==3.0.2
+qrcode==8.2

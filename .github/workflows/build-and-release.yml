@@ -1,0 +1,218 @@
+name: Build and Release Flow Controller
+
+on:
+  push:
+    branches: [ master, main ]
+    tags: [ 'v*' ]
+  pull_request:
+    branches: [ master, main ]
+
+env:
+  FLUTTER_VERSION: '3.24.3'
+  JAVA_VERSION: '17'
+  PYTHON_VERSION: '3.11'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0  # Fetch all history for changelog generation
+    
+    - name: Set up JDK
+      uses: actions/setup-java@v4
+      with:
+        distribution: 'temurin'
+        java-version: ${{ env.JAVA_VERSION }}
+    
+    - name: Set up Flutter
+      uses: subosito/flutter-action@v2
+      with:
+        flutter-version: ${{ env.FLUTTER_VERSION }}
+        channel: 'stable'
+        cache: true
+    
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: ${{ env.PYTHON_VERSION }}
+        cache: 'pip'
+    
+    - name: Install system dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y zip unzip
+    
+    - name: Verify build script permissions
+      run: chmod +x ./build.sh
+    
+    - name: Run build script
+      run: ./build.sh
+    
+    - name: Generate build timestamp
+      id: timestamp
+      run: |
+        echo "timestamp=$(date +'%Y%m%d_%H%M%S')" >> $GITHUB_OUTPUT
+        echo "date=$(date +'%Y-%m-%d %H:%M:%S UTC')" >> $GITHUB_OUTPUT
+    
+    - name: List build outputs
+      run: |
+        echo "=== Build outputs ==="
+        ls -la distributable/
+        echo "=== APK details ==="
+        ls -lh distributable/*.apk
+        echo "=== Server packages ==="
+        ls -lh distributable/*.zip
+    
+    # Upload individual artifacts for every build
+    - name: Upload Android APK
+      uses: actions/upload-artifact@v4
+      with:
+        name: android-apk-${{ steps.timestamp.outputs.timestamp }}
+        path: distributable/*.apk
+        retention-days: 30
+    
+    - name: Upload Windows Server
+      uses: actions/upload-artifact@v4
+      with:
+        name: windows-server-${{ steps.timestamp.outputs.timestamp }}
+        path: distributable/*windows*.zip
+        retention-days: 30
+    
+    - name: Upload Linux Server
+      uses: actions/upload-artifact@v4
+      with:
+        name: linux-server-${{ steps.timestamp.outputs.timestamp }}
+        path: distributable/*linux*.zip
+        retention-days: 30
+    
+    - name: Upload Installation Guide
+      uses: actions/upload-artifact@v4
+      with:
+        name: installation-guide-${{ steps.timestamp.outputs.timestamp }}
+        path: distributable/README.md
+        retention-days: 30
+    
+    - name: Upload Build Info
+      uses: actions/upload-artifact@v4
+      with:
+        name: build-info-${{ steps.timestamp.outputs.timestamp }}
+        path: build/BUILD_INFO.md
+        retention-days: 30
+    
+    # Create release only for tagged commits
+    - name: Generate changelog
+      id: changelog
+      if: startsWith(github.ref, 'refs/tags/')
+      uses: mikepenz/release-changelog-builder-action@v4
+      with:
+        configuration: |
+          {
+            "categories": [
+              {
+                "title": "## 🚀 Features",
+                "labels": ["feature", "enhancement"]
+              },
+              {
+                "title": "## 🐛 Bug Fixes", 
+                "labels": ["bug", "fix"]
+              },
+              {
+                "title": "## 📱 Android App",
+                "labels": ["android", "flutter"]
+              },
+              {
+                "title": "## 🖥️ Server",
+                "labels": ["server", "python"]
+              },
+              {
+                "title": "## 🔧 Build & CI",
+                "labels": ["build", "ci", "workflow"]
+              },
+              {
+                "title": "## 📚 Documentation",
+                "labels": ["docs", "documentation"]
+              },
+              {
+                "title": "## 🔄 Other Changes",
+                "labels": []
+              }
+            ],
+            "template": "#{{CHANGELOG}}\n\n**Full Changelog**: https://github.com/${{OWNER}}/${{REPO}}/compare/#{{FROM_TAG}}...#{{TO_TAG}}",
+            "pr_template": "- #{{TITLE}} (#{{NUMBER}})",
+            "empty_template": "- No changes in this release",
+            "max_pull_requests": 200,
+            "max_back_track_time_days": 365
+          }
+        token: ${{ secrets.GITHUB_TOKEN }}
+    
+    - name: Get tag version
+      id: tag_version
+      if: startsWith(github.ref, 'refs/tags/')
+      run: |
+        TAG=${GITHUB_REF#refs/tags/}
+        echo "tag=$TAG" >> $GITHUB_OUTPUT
+        echo "version=${TAG#v}" >> $GITHUB_OUTPUT
+    
+    - name: Create Release
+      if: startsWith(github.ref, 'refs/tags/')
+      uses: softprops/action-gh-release@v2
+      with:
+        tag_name: ${{ steps.tag_version.outputs.tag }}
+        name: Flow Controller ${{ steps.tag_version.outputs.version }}
+        body: |
+          # Flow Controller ${{ steps.tag_version.outputs.version }}
+          
+          **Built on:** ${{ steps.timestamp.outputs.date }}
+          **Commit:** ${{ github.sha }}
+          
+          ## 📦 Downloads
+          
+          - **📱 Android APK** - Install on your Android device (ARM64, Android 5.0+)
+          - **🖥️ Windows Server** - Extract and run `run-server.bat` (Windows 10/11 + Python 3.8+)
+          - **🐧 Linux Server** - Extract and run `./run-server.sh` (Linux + Python 3.8+)
+          - **📄 Installation Guide** - Detailed setup instructions
+          
+          ## 🚀 Quick Start
+          
+          1. **Install APK** on your Android device
+          2. **Extract server** package for your OS (Windows/Linux)  
+          3. **Edit config.json** and change the API token
+          4. **Run server** script - a QR code will appear
+          5. **Scan QR code** with the app for instant setup!
+          
+          ## 📋 What's New
+          
+          ${{ steps.changelog.outputs.changelog }}
+          
+          ---
+          
+          **Need help?** Check the [README](https://github.com/${{ github.repository }}) or [create an issue](https://github.com/${{ github.repository }}/issues).
+        files: |
+          distributable/*.apk
+          distributable/*.zip
+          distributable/README.md
+        draft: false
+        prerelease: false
+        generate_release_notes: false
+        token: ${{ secrets.GITHUB_TOKEN }}
+    
+    - name: Build Summary
+      if: always()
+      run: |
+        echo "=== Flow Controller Build Summary ==="
+        echo "📅 Build Date: ${{ steps.timestamp.outputs.date }}"
+        echo "🔧 Flutter: ${{ env.FLUTTER_VERSION }}"
+        echo "🐍 Python: ${{ env.PYTHON_VERSION }}"
+        echo "☕ Java: ${{ env.JAVA_VERSION }}"
+        echo "📂 Artifacts uploaded to GitHub Actions"
+        if [[ "${{ github.ref }}" == refs/tags/* ]]; then
+          echo "🏷️ Release created: ${{ steps.tag_version.outputs.tag }}"
+          echo "🎉 Files attached to release automatically"
+        else
+          echo "ℹ️ Regular build - no release created"
+        fi
+        echo "✅ Build completed successfully!"

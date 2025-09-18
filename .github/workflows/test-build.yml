@@ -1,0 +1,86 @@
+name: Test Build
+
+on:
+  pull_request:
+    branches: [ master, main ]
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
+      - '.gitignore'
+
+env:
+  FLUTTER_VERSION: '3.24.3'
+  JAVA_VERSION: '17'
+  PYTHON_VERSION: '3.11'
+
+jobs:
+  test-build:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Set up JDK
+      uses: actions/setup-java@v4
+      with:
+        distribution: 'temurin'
+        java-version: ${{ env.JAVA_VERSION }}
+    
+    - name: Set up Flutter
+      uses: subosito/flutter-action@v2
+      with:
+        flutter-version: ${{ env.FLUTTER_VERSION }}
+        channel: 'stable'
+        cache: true
+    
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: ${{ env.PYTHON_VERSION }}
+        cache: 'pip'
+    
+    - name: Install system dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y zip
+    
+    - name: Flutter Doctor
+      run: flutter doctor -v
+    
+    - name: Python Version Check
+      run: |
+        python3 --version
+        pip3 --version
+    
+    - name: Verify build script
+      run: |
+        chmod +x ./build.sh
+        echo "Build script is executable"
+    
+    - name: Test Flutter Analysis
+      run: |
+        cd android_controller
+        flutter analyze --no-fatal-infos
+    
+    - name: Test Python Server Compilation
+      run: |
+        cd server
+        python3 -m py_compile server.py
+        echo "✅ Server compiles successfully"
+    
+    - name: Test Build (Dry Run)
+      run: |
+        echo "🧪 Testing build process..."
+        ./build.sh
+        echo "✅ Build test completed"
+    
+    - name: Verify Build Outputs
+      run: |
+        echo "=== Checking build outputs ==="
+        ls -la distributable/
+        echo "=== APK created ==="
+        ls -lh distributable/*.apk
+        echo "=== Server packages created ==="
+        ls -lh distributable/*.zip
+        echo "✅ All expected files created"
