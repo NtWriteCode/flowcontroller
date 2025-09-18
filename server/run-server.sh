@@ -5,9 +5,17 @@
 
 set -e
 
-echo "🖥️  Android PC Controller - Local Server"
-echo "========================================"
-echo
+# Check for quiet flag
+QUIET_MODE=0
+if [[ "$1" == "--quiet" ]] || [[ "$1" == "-q" ]]; then
+    QUIET_MODE=1
+fi
+
+if [[ $QUIET_MODE -eq 0 ]]; then
+    echo "🖥️  Android PC Controller - Local Server"
+    echo "========================================"
+    echo
+fi
 
 # Colors
 RED='\033[0;31m'
@@ -85,11 +93,13 @@ if grep -q "change-this-secret-token\|secret-token" config.json 2>/dev/null; the
     print_warning "Default API token detected!"
     echo "Please edit server/config.json and set a secure API token."
     echo
-    read -p "Continue with default token? (y/N): " -n 1 -r
-    echo
-    if [[ ! $REPLY =~ ^[Yy]$ ]]; then
-        echo "Please update your API token in server/config.json"
-        exit 1
+    if [[ $QUIET_MODE -eq 0 ]]; then
+        read -p "Continue with default token? (y/N): " -n 1 -r
+        echo
+        if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+            echo "Please update your API token in server/config.json"
+            exit 1
+        fi
     fi
 fi
 

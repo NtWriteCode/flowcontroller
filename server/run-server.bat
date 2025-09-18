@@ -4,14 +4,27 @@ setlocal enabledelayedexpansion
 REM Android PC Controller - Local Server Runner
 REM Simple script to set up and run the server locally
 
-echo 🖥️  Android PC Controller - Local Server
-echo ========================================
-echo.
+REM Check for quiet flag
+set QUIET_MODE=0
+if "%~1"=="--quiet" set QUIET_MODE=1
+if "%~1"=="-q" set QUIET_MODE=1
+
+REM Hide console window if quiet mode (requires PowerShell)
+if %QUIET_MODE%==1 (
+    powershell -WindowStyle Hidden -Command "Start-Process cmd -ArgumentList '/c \"%~f0\" internal' -WindowStyle Hidden"
+    if "%~2" NEQ "internal" exit /b 0
+)
+
+if %QUIET_MODE%==0 (
+    echo 🖥️  Android PC Controller - Local Server
+    echo ========================================
+    echo.
+)
 
 REM Check if we're in the right directory
 if not exist "server.py" (
     echo [ERROR] server.py not found. Please run this script from the server directory.
-    pause
+    if %QUIET_MODE%==0 pause
     exit /b 1
 )
 
@@ -21,7 +34,7 @@ if %ERRORLEVEL% NEQ 0 (
     python3 --version >nul 2>&1
     if %ERRORLEVEL% NEQ 0 (
         echo [ERROR] Python not found. Please install Python 3.8+ first.
-        pause
+        if %QUIET_MODE%==0 pause
         exit /b 1
     )
     set PYTHON_CMD=python3
@@ -38,7 +51,7 @@ if not exist "venv" (
     %PYTHON_CMD% -m venv venv
     if %ERRORLEVEL% NEQ 0 (
         echo [ERROR] Failed to create virtual environment
-        pause
+        if %QUIET_MODE%==0 pause
         exit /b 1
     )
     echo [SUCCESS] Virtual environment created
@@ -54,7 +67,7 @@ pip install -r requirements.txt >nul 2>&1
 
 if %ERRORLEVEL% NEQ 0 (
     echo [ERROR] Failed to install dependencies
-    pause
+    if %QUIET_MODE%==0 pause
     exit /b 1
 )
 
@@ -70,7 +83,7 @@ if not exist "config.json" (
     echo   "port": 8080,
     echo   "host": "0.0.0.0"
     echo }
-    pause
+    if %QUIET_MODE%==0 pause
     exit /b 1
 )
 
@@ -80,11 +93,13 @@ if %ERRORLEVEL% EQU 0 (
     echo [WARNING] Default API token detected!
     echo Please edit config.json and set a secure API token.
     echo.
-    set /p "continue=Continue with default token? (y/N): "
-    if /i not "!continue!"=="y" (
-        echo Please update your API token in config.json
-        pause
-        exit /b 1
+    if %QUIET_MODE%==0 (
+        set /p "continue=Continue with default token? (y/N): "
+        if /i not "!continue!"=="y" (
+            echo Please update your API token in config.json
+            pause
+            exit /b 1
+        )
     )
 )
 
@@ -93,11 +108,13 @@ if %ERRORLEVEL% EQU 0 (
     echo [WARNING] Default API token detected!
     echo Please edit config.json and set a secure API token.
     echo.
-    set /p "continue=Continue with default token? (y/N): "
-    if /i not "!continue!"=="y" (
-        echo Please update your API token in config.json
-        pause
-        exit /b 1
+    if %QUIET_MODE%==0 (
+        set /p "continue=Continue with default token? (y/N): "
+        if /i not "!continue!"=="y" (
+            echo Please update your API token in config.json
+            pause
+            exit /b 1
+        )
     )
 )
 
@@ -107,4 +124,4 @@ echo Press Ctrl+C to stop
 echo.
 %PYTHON_CMD% server.py
 
-pause
+if %QUIET_MODE%==0 pause
