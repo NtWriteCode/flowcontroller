@@ -12,10 +12,10 @@ class ControlScreen extends StatefulWidget {
   final VoidCallback onConfigChanged;
 
   const ControlScreen({
-    Key? key,
+    super.key,
     required this.config,
     required this.onConfigChanged,
-  }) : super(key: key);
+  });
 
   @override
   State<ControlScreen> createState() => _ControlScreenState();
@@ -53,9 +53,9 @@ class _ControlScreenState extends State<ControlScreen> {
   int _pingMs = -1;
   
   // Gesture sensitivity settings
-  double _swipeThreshold = 50.0;
-  double _doubleTapMaxDistance = 50.0;
-  Duration _doubleTapMaxDuration = const Duration(milliseconds: 200);
+  final double _swipeThreshold = 50.0;
+  final double _doubleTapMaxDistance = 50.0;
+  final Duration _doubleTapMaxDuration = const Duration(milliseconds: 200);
 
   @override
   void initState() {

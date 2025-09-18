@@ -11,10 +11,10 @@ class ConfigScreen extends StatefulWidget {
   final VoidCallback onConfigSaved;
 
   const ConfigScreen({
-    Key? key,
+    super.key,
     this.initialConfig,
     required this.onConfigSaved,
-  }) : super(key: key);
+  });
 
   @override
   State<ConfigScreen> createState() => _ConfigScreenState();
