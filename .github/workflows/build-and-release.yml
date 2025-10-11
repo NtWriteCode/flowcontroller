@@ -1,222 +1,111 @@
-name: Build and Release Flow Controller
+name: Build and Release APK
 
 on:
   push:
-    branches: [ master, main ]
-    tags: [ 'v*' ]
-  pull_request:
-    branches: [ master, main ]
-
-env:
-  JAVA_VERSION: '17'
-  PYTHON_VERSION: '3.12'
+    tags:
+      - 'v*'  # Trigger on version tags like v1.0.0
+  workflow_dispatch:  # Allow manual trigger
 
 jobs:
   build:
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
-      packages: read
     
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-      with:
-        fetch-depth: 0  # Fetch all history for changelog generation
-    
-    - name: Set up JDK
-      uses: actions/setup-java@v4
-      with:
-        distribution: 'temurin'
-        java-version: ${{ env.JAVA_VERSION }}
-    
-    - name: Set up Flutter
-      uses: subosito/flutter-action@v2
-      with:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
           channel: 'stable'
           cache: true
-    
-    - name: Set up Python
-      uses: actions/setup-python@v5
-      with:
-        python-version: ${{ env.PYTHON_VERSION }}
-    
-    - name: Install system dependencies
-      run: |
-        sudo apt-get install -y zip unzip
-    
-    - name: Verify build script permissions
-      run: chmod +x ./build.sh
-    
-    - name: Run build script
-      run: ./build.sh
-    
-    - name: Generate build timestamp
-      id: timestamp
-      run: |
-        echo "timestamp=$(date +'%Y%m%d_%H%M%S')" >> $GITHUB_OUTPUT
-        echo "date=$(date +'%Y-%m-%d %H:%M:%S UTC')" >> $GITHUB_OUTPUT
-    
-    - name: List build outputs
-      run: |
-        echo "=== Build outputs ==="
-        ls -la distributable/
-        echo "=== APK details ==="
-        ls -lh distributable/*.apk
-        echo "=== Server packages ==="
-        ls -lh distributable/*.zip
-    
-    # Upload individual artifacts for every build
-    - name: Upload Android APK
-      uses: actions/upload-artifact@v4
-      with:
-        name: android-client-${{ steps.timestamp.outputs.timestamp }}
-        path: distributable/*.apk
-        retention-days: 30
-    
-    - name: Upload Windows Server
-      uses: actions/upload-artifact@v4
-      with:
-        name: windows-server-${{ steps.timestamp.outputs.timestamp }}
-        path: distributable/*windows*.zip
-        retention-days: 30
-    
-    - name: Upload Linux Server
-      uses: actions/upload-artifact@v4
-      with:
-        name: linux-server-${{ steps.timestamp.outputs.timestamp }}
-        path: distributable/*linux*.zip
-        retention-days: 30
-    
-    #- name: Upload Installation Guide
-    #  uses: actions/upload-artifact@v4
-    #  with:
-    #    name: installation-guide-${{ steps.timestamp.outputs.timestamp }}
-    #    path: distributable/README.md
-    #    retention-days: 30
-    
-    # Create release only for tagged commits
-    - name: Generate changelog
-      id: changelog
-      if: startsWith(github.ref, 'refs/tags/')
-      uses: mikepenz/release-changelog-builder-action@v4
-      with:
-        includeOpen: false
-        fetchViaCommits: true
-        fetchReviewers: false
-        fetchReleaseInformation: true
-        fetchReviews: false
-        commitMode: true
-        configuration: |
-          {
-            "categories": [
-              {
-                "title": "## 🚀 Features",
-                "labels": ["feature", "enhancement"]
-              },
-              {
-                "title": "## 🐛 Bug Fixes", 
-                "labels": ["bug", "fix"]
-              },
-              {
-                "title": "## 📱 Android App",
-                "labels": ["android", "flutter"]
-              },
-              {
-                "title": "## 🖥️ Server",
-                "labels": ["server", "python"]
-              },
-              {
-                "title": "## 🔧 Build & CI",
-                "labels": ["build", "ci", "workflow"]
-              },
-              {
-                "title": "## 📚 Documentation",
-                "labels": ["docs", "documentation"]
-              },
-              {
-                "title": "## 🔄 Other Changes",
-                "labels": []
-              }
-            ],
-            "template": "#{{CHANGELOG}}",
-            "pr_template": "- #{{TITLE}} (#{{NUMBER}})",
-            "commit_template": "- #{{TITLE}} (#{{SHA}})",
-            "empty_template": "- No changes in this release",
-            "include_labels": [],
-            "ignore_labels": [],
-            "sort": "ASC",
-            "max_pull_requests": 200,
-            "max_back_track_time_days": 365
-          }
-        token: ${{ secrets.GITHUB_TOKEN }}
-    
-    - name: Get tag version
-      id: tag_version
-      if: startsWith(github.ref, 'refs/tags/')
-      run: |
-        TAG=${GITHUB_REF#refs/tags/}
-        echo "tag=$TAG" >> $GITHUB_OUTPUT
-        echo "version=${TAG#v}" >> $GITHUB_OUTPUT
-    
-    - name: Create Release
-      if: startsWith(github.ref, 'refs/tags/')
-      uses: softprops/action-gh-release@v2
-      with:
-        tag_name: ${{ steps.tag_version.outputs.tag }}
-        name: Flow Controller ${{ steps.tag_version.outputs.version }}
-        body: |
-          # Flow Controller ${{ steps.tag_version.outputs.version }}
-          
-          **Built on:** ${{ steps.timestamp.outputs.date }}
-          **Commit:** ${{ github.sha }}
-          
-          ## 📦 Downloads
-          
-          - **📱 Android APK** - Install on your Android device (ARM64, Android 5.0+)
-          - **🖥️ Windows Server** - Extract and run `run-server.bat` (Windows 10/11 + Python 3.8+)
-          - **🐧 Linux Server** - Extract and run `./run-server.sh` (Linux + Python 3.8+)
-          - **📄 Installation Guide** - Detailed setup instructions
-          
-          ## 🚀 Quick Start
-          
-          1. **Install APK** on your Android device
-          2. **Extract server** package for your OS (Windows/Linux)  
-          3. **Edit config.json** and change the API token
-          4. **Run server** script - a QR code will appear
-          5. **Scan QR code** with the app for instant setup!
-          
-          ## 📋 What's New
-          
-          ${{ steps.changelog.outputs.changelog }}
-          
-          **Full Changelog**: https://github.com/${{ github.repository }}/compare/${{ steps.changelog.outputs.fromTag }}...${{ steps.changelog.outputs.toTag }}
-          
-          ---
-          
-          **Need help?** Check the [README](https://github.com/${{ github.repository }}) or [create an issue](https://github.com/${{ github.repository }}/issues).
-        files: |
-          distributable/*.apk
-          distributable/*.zip
-          distributable/README.md
-        draft: false
-        prerelease: false
-        generate_release_notes: false
-        token: ${{ secrets.GITHUB_TOKEN }}
-    
-    - name: Build Summary
-      if: always()
-      run: |
-        echo "=== Flow Controller Build Summary ==="
-        echo "📅 Build Date: ${{ steps.timestamp.outputs.date }}"
-        echo "🔧 Flutter: ${{ env.FLUTTER_VERSION }}"
-        echo "🐍 Python: ${{ env.PYTHON_VERSION }}"
-        echo "☕ Java: ${{ env.JAVA_VERSION }}"
-        echo "📂 Artifacts uploaded to GitHub Actions"
-        if [[ "${{ github.ref }}" == refs/tags/* ]]; then
-          echo "🏷️ Release created: ${{ steps.tag_version.outputs.tag }}"
-          echo "🎉 Files attached to release automatically"
-        else
-          echo "ℹ️ Regular build - no release created"
-        fi
-        echo "✅ Build completed successfully!"
+
+      - name: Get Flutter dependencies
+        working-directory: android_controller
+        run: flutter pub get
+
+      - name: Extract version from tag and update pubspec.yaml
+        working-directory: android_controller
+        run: |
+          if [[ $GITHUB_REF == refs/tags/v* ]]; then
+            # Extract version from tag (e.g., v1.2.3 -> 1.2.3)
+            VERSION=${GITHUB_REF#refs/tags/v}
+            echo "📦 Building version: $VERSION"
+            
+            # Calculate version code from version (e.g., 1.2.3 -> 10203)
+            IFS='.' read -r MAJOR MINOR PATCH <<< "$VERSION"
+            VERSION_CODE=$((MAJOR * 10000 + MINOR * 100 + PATCH))
+            echo "🔢 Version code: $VERSION_CODE"
+            
+            # Update pubspec.yaml with new version
+            sed -i "s/^version: .*/version: ${VERSION}+${VERSION_CODE}/" pubspec.yaml
+            
+            echo "✅ Updated pubspec.yaml to version ${VERSION}+${VERSION_CODE}"
+            grep "^version:" pubspec.yaml
+          else
+            echo "⚠️  Not a version tag, using default version from pubspec.yaml"
+          fi
+
+      - name: Decode and setup keystore
+        working-directory: android_controller/android
+        env:
+          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+        run: |
+          echo "$KEYSTORE_BASE64" | base64 -d > release-keystore.jks
+          echo "KEYSTORE_PATH=$GITHUB_WORKSPACE/android_controller/android/release-keystore.jks" >> $GITHUB_ENV
+
+      - name: Build release APK
+        working-directory: android_controller
+        env:
+          KEYSTORE_PATH: ${{ env.KEYSTORE_PATH }}
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+        run: flutter build apk --release
+
+      - name: Get version from tag
+        id: get_version
+        run: |
+          if [[ $GITHUB_REF == refs/tags/* ]]; then
+            VERSION=${GITHUB_REF#refs/tags/v}
+          else
+            VERSION="dev-$(date +'%Y%m%d-%H%M%S')"
+          fi
+          echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
+          echo "Building version: $VERSION"
+
+      - name: Rename APK
+        run: |
+          VERSION=${{ steps.get_version.outputs.VERSION }}
+          mkdir -p release
+          cp android_controller/build/app/outputs/flutter-apk/app-release.apk \
+             release/flow-controller-${VERSION}.apk
+
+      - name: Upload APK as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: flow-controller-apk
+          path: release/flow-controller-*.apk
+          retention-days: 90
+
+      - name: Create GitHub Release
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: release/flow-controller-*.apk
+          draft: false
+          prerelease: false
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Clean up keystore
+        if: always()
+        run: |
+          rm -f android_controller/android/release-keystore.jks
