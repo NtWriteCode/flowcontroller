@@ -1,0 +1,35 @@
+Control your PC remotely from your Android phone using intuitive gestures, keyboard input, and voice commands. Perfect for media centers, presentations, or casual PC control from the couch.
+
+This is the Android client app. You also need the lightweight Server Component running on your Windows or Linux PC (available from releases).
+
+✨ Features
+
+🎯 Gesture Control
+- Swipe to navigate (Arrow keys)
+- Tap to Enter
+- Double-tap to Escape
+- Swipe and hold for repeated key presses
+- Haptic feedback for every action
+
+⌨️ Smart Input
+- Use your phone's native keyboard to type on your PC
+- Send text instantly
+- Voice input supported via keyboard microphone
+
+🔊 System Control
+- Dedicated volume buttons with real-time percentage display
+- Wake-on-LAN: Automatically wake your PC with any gesture
+- Live status monitoring
+
+⚙️ Simple Setup
+- Auto-discovery of PC MAC address
+- QR Code pairing (coming soon)
+- Token-based security
+- Customizable settings
+
+🔧 Requirements
+- Android 5.0+ phone
+- Windows or Linux PC running the Flow Controller Server
+- Both devices on the same Wi-Fi network
+
+This app is open source and designed for speed and privacy. No external servers, no ads, no tracking. Your data stays on your local network.
