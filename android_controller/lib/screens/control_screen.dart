@@ -2,6 +2,8 @@ import 'dart:async';
 import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_android_volume_keydown/flutter_android_volume_keydown.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../models/server_config.dart';
 import '../services/api_service.dart';
 import '../services/wake_on_lan_service.dart';
@@ -47,6 +49,10 @@ class _ControlScreenState extends State<ControlScreen> {
   // Volume tracking (approximate)
   int _volumeLevel = 50; // Start at 50% (reasonable default)
   
+  // Hardware volume button interception
+  StreamSubscription<HardwareButton>? _volumeButtonSubscription;
+  bool _hardwareVolumeEnabled = false;
+  
   // Connection status tracking
   Timer? _healthCheckTimer;
   bool _isServerOnline = false;
@@ -67,6 +73,9 @@ class _ControlScreenState extends State<ControlScreen> {
     _keyboardController.addListener(_onKeyboardTextChanged);
     _keyboardFocusNode.addListener(_onKeyboardFocusChanged);
     
+    // Load hardware volume preference and start listening if enabled
+    _loadHardwareVolumePreference();
+    
     // Start health checking
     _startHealthChecking();
   }
@@ -76,9 +85,74 @@ class _ControlScreenState extends State<ControlScreen> {
     _holdTimer?.cancel();
     _tapDelayTimer?.cancel();
     _healthCheckTimer?.cancel();
+    _volumeButtonSubscription?.cancel();
     _keyboardController.dispose();
     _keyboardFocusNode.dispose();
     super.dispose();
+  }
+
+  // Hardware volume button handling
+  Future<void> _loadHardwareVolumePreference() async {
+    final prefs = await SharedPreferences.getInstance();
+    final enabled = prefs.getBool('hardware_volume_enabled') ?? false;
+    setState(() {
+      _hardwareVolumeEnabled = enabled;
+    });
+    if (enabled) {
+      _startVolumeButtonListener();
+    }
+  }
+
+  Future<void> _toggleHardwareVolume() async {
+    final newValue = !_hardwareVolumeEnabled;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('hardware_volume_enabled', newValue);
+    
+    setState(() {
+      _hardwareVolumeEnabled = newValue;
+    });
+    
+    if (newValue) {
+      _startVolumeButtonListener();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Hardware volume buttons will now control PC volume'),
+            backgroundColor: Colors.green,
+            duration: Duration(seconds: 2),
+          ),
+        );
+      }
+    } else {
+      _stopVolumeButtonListener();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Hardware volume buttons restored to phone volume'),
+            backgroundColor: Colors.blue,
+            duration: Duration(seconds: 2),
+          ),
+        );
+      }
+    }
+  }
+
+  void _startVolumeButtonListener() {
+    _volumeButtonSubscription?.cancel();
+    _volumeButtonSubscription = FlutterAndroidVolumeKeydown.stream.listen((event) {
+      if (event == HardwareButton.volume_down) {
+        HapticFeedback.lightImpact();
+        _sendVolumeCommand('down');
+      } else if (event == HardwareButton.volume_up) {
+        HapticFeedback.lightImpact();
+        _sendVolumeCommand('up');
+      }
+    });
+  }
+
+  void _stopVolumeButtonListener() {
+    _volumeButtonSubscription?.cancel();
+    _volumeButtonSubscription = null;
   }
 
   // Keyboard input handling
@@ -463,16 +537,37 @@ class _ControlScreenState extends State<ControlScreen> {
                 ),
               ),
             
-            // Top bar with settings
+            // Top bar with settings and hardware volume toggle
             Positioned(
               top: 16,
               right: 16,
-              child: IconButton(
-                onPressed: _openSettings,
-                icon: Icon(Icons.settings, color: theme.colorScheme.onSurface),
-                style: IconButton.styleFrom(
-                  backgroundColor: theme.colorScheme.surface.withOpacity(0.8),
-                ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // Hardware volume button toggle
+                  IconButton(
+                    onPressed: _toggleHardwareVolume,
+                    icon: Icon(
+                      _hardwareVolumeEnabled ? Icons.volume_up : Icons.volume_off,
+                      color: _hardwareVolumeEnabled ? Colors.green : theme.colorScheme.onSurface,
+                    ),
+                    style: IconButton.styleFrom(
+                      backgroundColor: theme.colorScheme.surface.withOpacity(0.8),
+                    ),
+                    tooltip: _hardwareVolumeEnabled 
+                        ? 'Hardware buttons control PC (tap to disable)'
+                        : 'Hardware buttons control phone (tap to enable PC control)',
+                  ),
+                  const SizedBox(width: 8),
+                  // Settings button
+                  IconButton(
+                    onPressed: _openSettings,
+                    icon: Icon(Icons.settings, color: theme.colorScheme.onSurface),
+                    style: IconButton.styleFrom(
+                      backgroundColor: theme.colorScheme.surface.withOpacity(0.8),
+                    ),
+                  ),
+                ],
               ),
             ),
             

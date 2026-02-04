@@ -5,6 +5,7 @@ import '../services/config_service.dart';
 import '../services/api_service.dart';
 import '../services/theme_service.dart';
 import 'qr_scanner_screen.dart';
+import 'qr_share_screen.dart';
 
 class ConfigScreen extends StatefulWidget {
   final ServerConfig? initialConfig;
@@ -142,6 +143,44 @@ class _ConfigScreenState extends State<ConfigScreen> {
     }
   }
 
+  void _shareQRCode() {
+    // Check if we have a valid configuration to share
+    if (_hostController.text.trim().isEmpty || 
+        _portController.text.trim().isEmpty ||
+        _tokenController.text.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please fill in all required fields before sharing'),
+          backgroundColor: Colors.orange,
+        ),
+      );
+      return;
+    }
+
+    final config = ServerConfig(
+      host: _hostController.text.trim(),
+      port: int.tryParse(_portController.text.trim()) ?? 8080,
+      apiToken: _tokenController.text.trim(),
+      macAddress: _macController.text.trim(),
+    );
+
+    if (!config.isValid) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please ensure all fields are valid before sharing'),
+          backgroundColor: Colors.orange,
+        ),
+      );
+      return;
+    }
+
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => QRShareScreen(config: config),
+      ),
+    );
+  }
+
   Future<void> _saveConfig() async {
     if (!_formKey.currentState!.validate()) return;
 
@@ -242,21 +281,39 @@ class _ConfigScreenState extends State<ConfigScreen> {
               ),
               const SizedBox(height: 16),
               
-              // QR Code scan button
-              SizedBox(
-                width: double.infinity,
-                child: OutlinedButton.icon(
-                  onPressed: _scanQRCode,
-                  icon: const Icon(Icons.qr_code_scanner, color: Colors.blue),
-                  label: const Text(
-                    'Scan QR Code from PC',
-                    style: TextStyle(color: Colors.blue, fontWeight: FontWeight.w600),
+              // QR Code buttons
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      onPressed: _scanQRCode,
+                      icon: const Icon(Icons.qr_code_scanner, color: Colors.blue),
+                      label: const Text(
+                        'Scan QR',
+                        style: TextStyle(color: Colors.blue, fontWeight: FontWeight.w600),
+                      ),
+                      style: OutlinedButton.styleFrom(
+                        side: const BorderSide(color: Colors.blue, width: 2),
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                      ),
+                    ),
                   ),
-                  style: OutlinedButton.styleFrom(
-                    side: const BorderSide(color: Colors.blue, width: 2),
-                    padding: const EdgeInsets.symmetric(vertical: 12),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      onPressed: _shareQRCode,
+                      icon: const Icon(Icons.qr_code_2, color: Colors.green),
+                      label: const Text(
+                        'Share QR',
+                        style: TextStyle(color: Colors.green, fontWeight: FontWeight.w600),
+                      ),
+                      style: OutlinedButton.styleFrom(
+                        side: const BorderSide(color: Colors.green, width: 2),
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                      ),
+                    ),
                   ),
-                ),
+                ],
               ),
               
               const SizedBox(height: 16),

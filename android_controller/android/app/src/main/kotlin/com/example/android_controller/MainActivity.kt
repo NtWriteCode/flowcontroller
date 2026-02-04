@@ -1,5 +1,5 @@
 package com.ntwritecode.flowcontroller
 
-import io.flutter.embedding.android.FlutterActivity
+import com.github.volkeert.flutter_android_volume_keydown.FlutterAndroidVolumeKeydownActivity
 
-class MainActivity : FlutterActivity()
+class MainActivity : FlutterAndroidVolumeKeydownActivity()
