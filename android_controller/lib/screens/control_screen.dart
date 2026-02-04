@@ -2,7 +2,6 @@ import 'dart:async';
 import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_android_volume_keydown/flutter_android_volume_keydown.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/server_config.dart';
 import '../services/api_service.dart';
@@ -50,7 +49,9 @@ class _ControlScreenState extends State<ControlScreen> {
   int _volumeLevel = 50; // Start at 50% (reasonable default)
   
   // Hardware volume button interception
-  StreamSubscription<HardwareButton>? _volumeButtonSubscription;
+  static const volumeChannel = MethodChannel('com.ntwritecode.flowcontroller/volume');
+  static const volumeEventChannel = EventChannel('com.ntwritecode.flowcontroller/volume_events');
+  StreamSubscription<dynamic>? _volumeButtonSubscription;
   bool _hardwareVolumeEnabled = false;
   
   // Connection status tracking
@@ -137,22 +138,38 @@ class _ControlScreenState extends State<ControlScreen> {
     }
   }
 
-  void _startVolumeButtonListener() {
+  void _startVolumeButtonListener() async {
     _volumeButtonSubscription?.cancel();
-    _volumeButtonSubscription = FlutterAndroidVolumeKeydown.stream.listen((event) {
-      if (event == HardwareButton.volume_down) {
-        HapticFeedback.lightImpact();
-        _sendVolumeCommand('down');
-      } else if (event == HardwareButton.volume_up) {
-        HapticFeedback.lightImpact();
-        _sendVolumeCommand('up');
-      }
-    });
+    
+    // Enable volume button interception in native code
+    try {
+      await volumeChannel.invokeMethod('enableVolumeButtons');
+      
+      // Listen to volume button events
+      _volumeButtonSubscription = volumeEventChannel.receiveBroadcastStream().listen((event) {
+        if (event == 'volume_down') {
+          HapticFeedback.lightImpact();
+          _sendVolumeCommand('down');
+        } else if (event == 'volume_up') {
+          HapticFeedback.lightImpact();
+          _sendVolumeCommand('up');
+        }
+      });
+    } catch (e) {
+      print('Error starting volume button listener: $e');
+    }
   }
 
-  void _stopVolumeButtonListener() {
+  void _stopVolumeButtonListener() async {
     _volumeButtonSubscription?.cancel();
     _volumeButtonSubscription = null;
+    
+    // Disable volume button interception in native code
+    try {
+      await volumeChannel.invokeMethod('disableVolumeButtons');
+    } catch (e) {
+      print('Error stopping volume button listener: $e');
+    }
   }
 
   // Keyboard input handling

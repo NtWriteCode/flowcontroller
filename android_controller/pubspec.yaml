@@ -37,7 +37,6 @@ dependencies:
   mobile_scanner: ^7.1.4
   provider: ^6.1.5+1
   qr_flutter: ^4.1.0
-  flutter_android_volume_keydown: ^1.0.1
 
 dev_dependencies:
   flutter_test:
